@@ -1,0 +1,39 @@
+<style>
+body{margin:0;background:#15151d;color:#f2f2f7;font-family:Arial,sans-serif}#wrap{border-radius:16px;display:flex;justify-content:center}html,body{height:100%;overflow:hidden}#wrap{height:100vh}svg{display:block}text{fill:#f2f2f7;font-size:15px;font-weight:700;paint-order:stroke;stroke:#15151d;stroke-width:4px;stroke-linejoin:round}.heading{font-size:13px;fill:#a8acbd;letter-spacing:1px;stroke:none}.sub{font-size:12.5px;font-weight:500;fill:#c9cde0}.lim-t{font-size:12px;font-weight:700;fill:#ff8a8a}.lim{animation:limP 2s ease-in-out infinite}@keyframes limP{0%,100%{opacity:.5}50%{opacity:1}}#tip{position:fixed;display:none;pointer-events:none;padding:14px 18px;background:#0c0d15;border:1px solid #414457;border-radius:12px;box-shadow:0 8px 24px #0008;font-size:14px;line-height:1.7;z-index:5}#tip strong{color:#9fe870}
+</style><div id="wrap"></div><div id="tip"></div>
+<script>__D3__</script><script>__SANKEY__</script><script>
+const RAW=__DATA__;
+const money=v=>'£'+Math.round(v).toLocaleString('en-GB');
+let data,links,nodes;
+function draw(){
+d3.select('#wrap').selectAll('*').remove();
+data=JSON.parse(JSON.stringify(RAW));
+const W=Math.max(760,window.innerWidth),H=Math.max(520,window.innerHeight),LAB=Math.min(320,W*0.24);
+const pct=v=>Math.round(v/data.total*100)+'%';
+const COLS=[20,Math.round((W-LAB)*0.26),Math.round((W-LAB)*0.52),W-LAB-16];
+const layout=d3.sankey().nodeId(d=>d.id).nodeWidth(16).nodePadding(20).nodeAlign(d3.sankeyJustify).nodeSort(null).extent([[COLS[0],52],[COLS[3]+16,H-20]]);
+const graph=layout(data);
+graph.nodes.forEach(n=>{n.x0=COLS[n.depth];n.x1=n.x0+16});
+layout.update(graph);
+const svg=d3.select('#wrap').append('svg').attr('width',W).attr('height',H).attr('viewBox',`0 0 ${W} ${H}`);
+[['ALL MONEY',COLS[0]],['WHERE IT WAS SENT',COLS[1]-10],['WHY  ·  🚫 = APP LIMIT',COLS[2]],['WHERE IT WENT',COLS[3]]].forEach(([t,x])=>svg.append('text').attr('class','heading').attr('x',x).attr('y',24).text(t));
+const defs=svg.append('defs');
+graph.links.forEach((d,i)=>{let g=defs.append('linearGradient').attr('id','l'+i).attr('gradientUnits','userSpaceOnUse').attr('x1',d.source.x1).attr('x2',d.target.x0);g.append('stop').attr('offset','0%').attr('stop-color',d.source.color);g.append('stop').attr('offset','100%').attr('stop-color',d.target.color)});
+links=svg.append('g').attr('fill','none').selectAll('path').data(graph.links).join('path').attr('d',d3.sankeyLinkHorizontal()).attr('stroke',(d,i)=>`url(#l${i})`).attr('stroke-width',d=>Math.max(1,d.width)).attr('stroke-opacity',.5);
+nodes=svg.append('g').selectAll('g').data(graph.nodes).join('g');
+nodes.append('rect').attr('x',d=>d.x0).attr('y',d=>d.y0).attr('width',16).attr('height',d=>Math.max(3,d.y1-d.y0)).attr('rx',5).attr('fill',d=>d.color);
+nodes.filter(d=>d.limit).append('rect').attr('x',d=>d.x0-4).attr('y',d=>d.y0-4).attr('width',24).attr('height',d=>Math.max(3,d.y1-d.y0)+8).attr('rx',7).attr('fill','none').attr('stroke','#ff6b6b').attr('stroke-width',2).attr('stroke-dasharray','4 3').attr('class','lim');
+const label=nodes.append('text').attr('x',d=>d.x1+9).attr('y',d=>(d.y0+d.y1)/2).attr('dy',d=>d.kind==='dest'||d.kind==='source'||d.kind==='total'||d.limit?'-.15em':'.35em');
+label.append('tspan').text(d=>d.kind==='reason'?(d.limit?'🚫 ':'')+d.name+'  '+pct(d.value):d.name);
+label.filter(d=>d.limit).append('tspan').attr('class','lim-t').attr('x',d=>d.x1+9).attr('dy','1.25em').text(d=>d.limit);
+label.filter(d=>d.kind!=='reason').append('tspan').attr('class','sub').attr('x',d=>d.x1+9).attr('dy','1.25em').text(d=>d.kind==='dest'?money(d.value)+' · app '+Math.round(d.app/d.value*100)+'% · Wise '+Math.round(d.wise/d.value*100)+'%':money(d.value)+' · '+pct(d.value));
+bind();}
+const tip=d3.select('#tip');
+function show(event,title,lines){tip.style('display','block').html('<strong>'+title+'</strong><br>'+lines.join('<br>'));move(event)}
+function move(e){tip.style('left',Math.min(e.clientX+16,window.innerWidth-330)+'px').style('top',Math.min(e.clientY+12,window.innerHeight-165)+'px')}
+function bind(){
+links.on('mouseenter',function(e,d){links.attr('stroke-opacity',.1);d3.select(this).attr('stroke-opacity',.9);show(e,d.source.name+' → '+d.target.name,[money(d.value),(d.value/data.total*100).toFixed(1)+'% of all money sent'])}).on('mousemove',move).on('mouseleave',()=>{links.attr('stroke-opacity',.5);tip.style('display','none')});
+nodes.on('mouseenter',function(e,d){links.attr('stroke-opacity',l=>l.source===d||l.target===d?.85:.07);show(e,d.name,d.limit?[money(d.value)+' · '+(d.value/data.total*100).toFixed(1)+'% of all money sent','🚫 '+d.limit,'This money went to Wise directly because the app cannot do it yet.']:d.kind==='dest'?[money(d.value)+' in total','🟢 PartnerBank app: '+money(d.app)+' ('+Math.round(d.app/d.value*100)+'%)','🟠 Wise directly: '+money(d.wise)+' ('+Math.round(d.wise/d.value*100)+'%)']:[money(d.value),(d.value/data.total*100).toFixed(1)+'% of all money sent'])}).on('mousemove',move).on('mouseleave',()=>{links.attr('stroke-opacity',.5);tip.style('display','none')});
+}
+draw();window.addEventListener('resize',()=>{clearTimeout(window._t);window._t=setTimeout(draw,150)});
+</script>

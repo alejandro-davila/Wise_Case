@@ -1,0 +1,16 @@
+.DS_Store
+__pycache__/
+*.pyc
+~$*
+Older versions/
+app_before_*.py
+*.pptx
+Wise_Case_Study_Tableau.xlsx
+Research/
+Web page/
+
+# Personal interview prep: never publish
+INTERVIEW_QA.md
+TALK_TRACK.md
+*.pdf
+*.heic
