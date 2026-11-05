@@ -54,7 +54,7 @@ def monthly(d):
         })
     return pd.DataFrame(rows).set_index('Month')
 
----------------------------------------
+# ---------------------------------------
 def summary(d):
     app = d[d.Channel.eq('Integration')]
     sent = app[app.Transacted]
@@ -76,7 +76,7 @@ def summary(d):
     missing = (wise[wise['Target Currency'].isin(MISSING)]
                .groupby('Target Currency')['Transaction Volume (GBP)'].sum() * SCALE).sort_values(ascending=False)
            
----------------------------------------
+# ---------------------------------------
     ok = sent['Transfer status'].eq('Completed') if 'Transfer status' in sent else None
     rel = {}
     if ok is not None:
@@ -84,7 +84,7 @@ def summary(d):
         rel['under_20s'] = sent.loc[ok, 'Arrival time (seconds)'].dropna().le(20).mean()
         rel['quote_ms'] = app['Quote API response (ms)'].median()
 
----------------------------------------
+# ---------------------------------------
 
     wd = d[d.Channel.eq('Wise direct')]
     wd_users = set(wd['User ID'])
@@ -121,7 +121,7 @@ if __name__ == '__main__':
             print(k, '=', v if not isinstance(v, float) else round(v, 4))
 
 
----------------------------------------
+# ---------------------------------------
 
 Q4_DEFAULTS = dict(months=36, partners=3, eligible=100000, adoption=5, revenue=2.5, displaced=0.5,
                    service=0.75, build=300000, onboarding=20000, fixed=5000, launch=6, ramp=6,
@@ -130,7 +130,7 @@ Q4_DEFAULTS = dict(months=36, partners=3, eligible=100000, adoption=5, revenue=2
 
 def project(months, partners, eligible, adoption, revenue, displaced, service, build, onboarding,
             fixed, launch, ramp, attrition, activation):
----------------------------------------
+# ---------------------------------------
     new_each = partners * eligible * adoption / 100 / ramp
     active = cumul = 0.0
     rows = []
