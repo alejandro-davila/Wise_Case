@@ -1,9 +1,7 @@
 import json
 from pathlib import Path
-
 import pandas as pd
 import streamlit as st
-
 import analysis as a
 
 st.set_page_config(page_title="PartnerBank QBR", layout="wide")
