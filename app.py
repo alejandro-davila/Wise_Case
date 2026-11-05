@@ -1,4 +1,7 @@
 """PartnerBank QBR: Wise Platform case study. Run with: streamlit run app.py"""
+import json
+from pathlib import Path
+
 import altair as alt
 import pandas as pd
 import streamlit as st
@@ -34,6 +37,20 @@ def donut(parts, centre, sub):
     st.altair_chart((ring + mid + low).properties(height=310).configure_view(strokeWidth=0), use_container_width=True)
 
 
+NOTES = json.loads((Path(__file__).parent / 'slide_notes.json').read_text())
+
+
+def notes(key):
+    """The written notes behind each section: the point, the proof, and why it matters."""
+    text = NOTES.get(key)
+    if not text:
+        return
+    with st.expander('Notes: the point and the proof'):
+        for block in text.split('\n\n'):
+            head, _, body = block.partition('\n')
+            st.markdown(f'**{head.title()}**  \n' + body.replace('\n', '  \n'))
+
+
 def footnote():
     st.caption('Illustrative figures from a mock dataset (10,000 records, shown ×20 to match PartnerBank’s size).')
 
@@ -62,6 +79,7 @@ if page == 'Summary':
 | **3. Multi-currency accounts** | {s['mca_share']:.0%} of PartnerBank’s customers on Wise already use one. Real behaviour, not just survey interest. |
 | **4. Internal case** | Judge it on new revenue Wise would not earn anyway. Fund a one-partner pilot before a full build. |
 """)
+    notes('Summary')
     footnote()
 
 
@@ -77,6 +95,7 @@ elif page == '1. Quarterly review':
     donut([('Went on to send money', s['send_rate'], NAVY), ('Checked the fee but did not send', 1 - s['send_rate'], '#E8EBE6')],
           f'{s["send_rate"]:.0%}', 'of fee checkers sent money')
 
+    notes('Momentum')
     st.subheader('The service is reliable, which gives us a strong base to grow on')
     rel = s['reliability']
     c1, c2, c3 = st.columns(3)
@@ -84,6 +103,7 @@ elif page == '1. Quarterly review':
     c2.metric('Arrive in under 20 seconds', f'{rel["under_20s"]:.0%}')
     c3.metric('Time to show the fee', f'{rel["quote_ms"]:.0f} ms')
 
+    notes('Service quality')
     st.subheader(f'{s["wise_share"]:.0%} of the money your customers send goes around your app, and Wise-direct use is growing {s["wise_users_growth"] / s["checks_growth"]:.1f}x as fast')
     c1, c2 = st.columns(2)
     c1.metric(f'Sent on Wise directly (vs {money(s["app_vol"])} in the app)', money(s['wise_vol']))
@@ -92,6 +112,7 @@ elif page == '1. Quarterly review':
            (f'Sent on Wise directly ({money(s["wise_vol"])})', s['wise_vol'], ORANGE)],
           f'{s["wise_share"]:.0%}', 'went around the app')
 
+    notes('The opportunity')
     st.subheader(f'{s["limited_share"]:.0%} of all money ({money(s["limited"])}) goes to Wise because of a limit in today’s app')
     fix = {'Over £50,000': 'Raise the limit', 'Currency not offered': 'Add currencies',
            'Sent from euros or dollars': 'Send from EUR and USD', 'Business customer': 'Open to business',
@@ -104,6 +125,7 @@ elif page == '1. Quarterly review':
 
     ms = s['missing']
     top3 = ms[['PKR', 'BDT', 'JPY']].sum() / ms.sum()
+    notes('Why it leaves')
     st.subheader(f'Three currencies make up {top3:.0%} of the money going to currencies the app does not offer')
     names = {'PKR': 'Pakistani rupee', 'BDT': 'Bangladeshi taka', 'JPY': 'Japanese yen',
              'LKR': 'Sri Lankan rupee', 'KRW': 'South Korean won'}
@@ -113,12 +135,14 @@ elif page == '1. Quarterly review':
                                'Share of missing-currency money': (top / ms.sum()).map('{:.0%}'.format).values}),
                  hide_index=True, width='stretch')
 
+    notes('Currency coverage')
     st.subheader('Half of new sign-ups never make a first transfer')
     c1, c2, c3 = st.columns(3)
     c1.metric('New sign-ups', f'{s["new_signups"]:,.0f}')
     c2.metric(f'Made a first transfer ({s["new_rate"]:.0%})', f'{s["new_senders"]:,.0f}')
     c3.metric('Have not sent yet', f'{s["new_signups"] - s["new_senders"]:,.0f}')
 
+    notes('Activation')
     st.subheader('What we recommend')
     share = st.slider('How much of the money we can win back do you expect to win back?', 10, 100, 50, 10, format='%d%%')
     st.write(f'At {share}%, that is about **{money(s["winback_half"] * share / 50)}** more through your app a year.')
@@ -130,6 +154,7 @@ elif page == '1. Quarterly review':
 
 Headline KPI to track monthly: the share of customers’ money sent through the app.
 """)
+    notes('What we recommend')
     footnote()
 
 
@@ -153,6 +178,7 @@ elif page == '2. Convenience fee':
         st.write('Cheaper than ' + ', and '.join(tips) + '. Compare what the recipient gets too: banks also earn on the exchange rate.')
     st.caption('Competitor fees from HSBC and Lloyds UK websites, checked 2 Nov 2026.')
 
+    notes('Fee design')
     st.subheader('Some customers will send less, so we should test the fee before rolling it out')
     sent = d[d.Channel.eq('Integration') & d.Transacted]
     fees = sent['Transaction Volume (GBP)'].map(lambda v: a.fee(v, rate, minimum, cap))
@@ -166,6 +192,7 @@ elif page == '2. Convenience fee':
 - **How to test it:** split customers at random into a fee group and a no-fee group, show the full cost before they confirm, run it for at least two months, and stop early if complaints or drop-off pass agreed limits.
 """)
 
+    notes('Effect on usage')
     st.subheader('Judge the fee on revenue and on customer behaviour together')
     st.dataframe(pd.DataFrame([
         ['Fee check to send rate', 'Does the fee stop people at the last step?'],
@@ -175,6 +202,7 @@ elif page == '2. Convenience fee':
         ['Complaints and support contacts', 'Do customers understand the fee?'],
         ['Extra revenue per customer', 'Is it worth it after customers who stop?'],
     ], columns=['KPI', 'What it tells us']), hide_index=True, width='stretch')
+    notes('KPIs')
     footnote()
 
 
@@ -194,6 +222,7 @@ elif page == '3. Multi-currency accounts':
 - These customers are a ready-made pilot group.
 - **Caveat:** they already use Wise, so they are keener than the average customer. Use them to design the pilot, not to forecast for the whole bank.
 """)
+    notes('Evidence')
     footnote()
 
 
@@ -220,6 +249,7 @@ elif page == '4. Internal business case':
 - Then subtract build (£300k), launch (£20k per partner), running and activation costs.
 - Base case: 3 partners, 5% adoption, £2.50 a month. It adds revenue but does not pay back in 3 years.
 """)
+    notes('Wise internal')
     st.subheader('Recommendation: fund a one-partner pilot with clear targets before a full build')
     st.dataframe(pd.DataFrame([
         ['Cost and payback', 'What does it cost to build, launch and run, and when does it pay back?'],
@@ -229,6 +259,7 @@ elif page == '4. Internal business case':
         ['Opportunity cost', 'Is revenue per engineering month higher than fixing the Send Money limits?'],
     ], columns=['Beyond revenue, weigh', 'Question to answer']), hide_index=True, width='stretch')
     st.write('**Pilot targets:** adoption rate, new revenue per account, reliability and fraud within limits, and a go or stop decision after 6 months.')
+    notes('Wise internal 2')
     footnote()
 
 
@@ -244,3 +275,4 @@ else:
 """)
     with st.expander('Monthly numbers'):
         st.dataframe(mon, width='stretch')
+    notes('Appendix')
