@@ -1,6 +1,3 @@
-# PartnerBank QBR - Wise Platform case study
-# run: streamlit run app.py
-
 import json
 from pathlib import Path
 
@@ -14,22 +11,18 @@ st.set_page_config(page_title="PartnerBank QBR", layout="wide")
 HERE = Path(__file__).parent
 notes = json.loads((HERE / "slide_notes.json").read_text())
 
-
 @st.cache_data
 def get_data():
     d = a.load()
     return d, a.summary(d)
-
-
+    
 def m(v):
     return f"£{v / 1e6:.1f}M"
-
 
 def show_notes(key):
     if key in notes:
         with st.expander("Notes"):
             st.write(notes[key])
-
 
 d, s = get_data()
 R = s["by_reason"]
@@ -57,7 +50,6 @@ if page == "Summary":
         ],
     }).set_index("Question"))
     show_notes("Summary")
-
 
 elif page == "1. Quarterly review":
     st.title("1. Quarterly review")
@@ -219,7 +211,6 @@ Besides revenue, weigh:
 Pilot targets: adoption, revenue per account, reliability and fraud. Go / stop after 6 months.
 """)
     show_notes("Wise internal 2")
-
 
 else:
     st.title("About the data")
