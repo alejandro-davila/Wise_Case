@@ -1,28 +1,23 @@
-# numbers for the app and the deck
 from pathlib import Path
 import pandas as pd
 
 DATA_FILE = Path(__file__).parent / 'Wise_Mock_Dataset_FY2026.xlsx'
 SCALE = 20  # 10,000-row sample x20 = PartnerBank's size (33,000 fee checks a quarter in the brief)
 
-# Currencies the integration does not support today (from the brief)
 MISSING = {'BDT', 'BWP', 'COP', 'CZK', 'GHS', 'globalEUR', 'globalUSD', 'globalGBP', 'JPY',
            'KRW', 'LKR', 'PKR', 'RUB', 'THB', 'TZS', 'UGX', 'UYU', 'ZMW'}
 
-# Each Wise-direct transfer gets one reason, checked in this order
 REASONS = [
     ('Business customer', lambda d: d['User type'].eq('Business')),
     ('Sent from euros or dollars', lambda d: d['Source Currency'].ne('GBP')),
     ('Same-currency transfer', lambda d: d['Source Currency'].eq(d['Target Currency'])),
     ('Currency not offered', lambda d: d['Target Currency'].isin(MISSING)),
     ('Over £50,000', lambda d: d['Transaction Volume (GBP)'].gt(50000)),
-    ('Account, card or receiving', lambda d: d['Product used'].ne('Send Money')),
-]
+    ('Account, card or receiving', lambda d: d['Product used'].ne('Send Money')),]
 LIMITS = [r for r, _ in REASONS if r != 'Account, card or receiving']
 NO_LIMIT = 'No limit (app could have sent it)'
 
-FEE_RATE, FEE_MIN, FEE_CAP = 0.3, 1.0, 15.0   # Q2 recommendation
-
+FEE_RATE, FEE_MIN, FEE_CAP = 0.3, 1.0, 15.0 
 
 def load(path=DATA_FILE):
     d = pd.read_excel(path, sheet_name='Transactions')
@@ -33,7 +28,6 @@ def load(path=DATA_FILE):
         d[c] = d[c].map(lambda v: str(v).lower() in ('true', '1', 'yes'))
     return d
 
-
 def add_reason(direct):
     direct = direct.copy()
     direct['Reason'] = NO_LIMIT
@@ -41,10 +35,8 @@ def add_reason(direct):
         direct.loc[test(direct), 'Reason'] = name
     return direct
 
-
 def fee(amount, rate=FEE_RATE, minimum=FEE_MIN, cap=FEE_CAP):
     return min(max(amount * rate / 100, minimum), cap)
-
 
 def monthly(d):
     app = d[d.Channel.eq('Integration')]
@@ -62,7 +54,7 @@ def monthly(d):
         })
     return pd.DataFrame(rows).set_index('Month')
 
-
+---------------------------------------
 def summary(d):
     app = d[d.Channel.eq('Integration')]
     sent = app[app.Transacted]
@@ -83,7 +75,8 @@ def summary(d):
 
     missing = (wise[wise['Target Currency'].isin(MISSING)]
                .groupby('Target Currency')['Transaction Volume (GBP)'].sum() * SCALE).sort_values(ascending=False)
-
+           
+---------------------------------------
     ok = sent['Transfer status'].eq('Completed') if 'Transfer status' in sent else None
     rel = {}
     if ok is not None:
@@ -91,7 +84,8 @@ def summary(d):
         rel['under_20s'] = sent.loc[ok, 'Arrival time (seconds)'].dropna().le(20).mean()
         rel['quote_ms'] = app['Quote API response (ms)'].median()
 
-    # Q3: Wise-direct customers already using an account
+---------------------------------------
+
     wd = d[d.Channel.eq('Wise direct')]
     wd_users = set(wd['User ID'])
     mca = set(wd.loc[wd['Product used'].eq('Multi-currency Account'), 'User ID'])
@@ -127,7 +121,8 @@ if __name__ == '__main__':
             print(k, '=', v if not isinstance(v, float) else round(v, 4))
 
 
-# Q4 model
+---------------------------------------
+
 Q4_DEFAULTS = dict(months=36, partners=3, eligible=100000, adoption=5, revenue=2.5, displaced=0.5,
                    service=0.75, build=300000, onboarding=20000, fixed=5000, launch=6, ramp=6,
                    attrition=1.0, activation=3.0)
@@ -135,7 +130,7 @@ Q4_DEFAULTS = dict(months=36, partners=3, eligible=100000, adoption=5, revenue=2
 
 def project(months, partners, eligible, adoption, revenue, displaced, service, build, onboarding,
             fixed, launch, ramp, attrition, activation):
-    # one launch, even ramp-up, monthly churn, before tax
+---------------------------------------
     new_each = partners * eligible * adoption / 100 / ramp
     active = cumul = 0.0
     rows = []
