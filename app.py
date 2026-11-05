@@ -41,14 +41,12 @@ NOTES = json.loads((Path(__file__).parent / 'slide_notes.json').read_text())
 
 
 def notes(key):
-    """The written notes behind each section: the point, the proof, and why it matters."""
+    """The notes for each section, written as one story that links to the next section."""
     text = NOTES.get(key)
     if not text:
         return
-    with st.expander('Notes: the point and the proof'):
-        for block in text.split('\n\n'):
-            head, _, body = block.partition('\n')
-            st.markdown(f'**{head.title()}**  \n' + body.replace('\n', '  \n'))
+    with st.expander('The story behind this section'):
+        st.markdown(text)
 
 
 def footnote():
