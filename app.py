@@ -20,19 +20,18 @@ def money(v):
     return f'£{v / 1e6:.1f}M'
 
 
-def line_chart(frame, y_title, fmt=',.0f', colors=(NAVY, ORANGE)):
-    tidy = frame.reset_index().melt(frame.index.name or 'index', var_name='Series', value_name='Value')
-    x = frame.index.name or 'index'
-    chart = alt.Chart(tidy).mark_line(strokeWidth=3).encode(
-        x=alt.X(f'{x}:T' if x == 'Month' else f'{x}:Q', title=None if x == 'Month' else x,
-                axis=alt.Axis(format='%b %y') if x == 'Month' else alt.Axis()),
-        y=alt.Y('Value:Q', title=y_title, axis=alt.Axis(format=fmt), scale=alt.Scale(zero=True)),
-        color=alt.Color('Series:N', scale=alt.Scale(domain=list(frame.columns), range=list(colors)),
-                        legend=alt.Legend(orient='bottom', title=None)),
-        tooltip=[alt.Tooltip(f'{x}:T' if x == 'Month' else f'{x}:Q', title=x), 'Series:N',
-                 alt.Tooltip('Value:Q', format=fmt)],
-    ).properties(height=320)
-    st.altair_chart(chart, use_container_width=True)
+def donut(parts, centre, sub):
+    """Doughnut chart: parts = [(label, value, colour)], headline number in the middle."""
+    df = pd.DataFrame(parts, columns=['Part', 'Value', 'Colour'])
+    df['Share'] = df.Value / df.Value.sum()
+    base = alt.Chart(df).encode(theta=alt.Theta('Value:Q', stack=True))
+    ring = base.mark_arc(innerRadius=95, outerRadius=140, stroke='white', strokeWidth=3).encode(
+        color=alt.Color('Part:N', scale=alt.Scale(domain=list(df.Part), range=list(df.Colour)),
+                        legend=alt.Legend(orient='right', title=None, labelFontSize=13, labelLimit=260)),
+        tooltip=['Part:N', alt.Tooltip('Share:Q', format='.0%')])
+    mid = alt.Chart(pd.DataFrame({'t': [centre]})).mark_text(fontSize=40, fontWeight='bold', color=NAVY, dy=-8).encode(text='t:N')
+    low = alt.Chart(pd.DataFrame({'t': [sub]})).mark_text(fontSize=13, color='#454745', dy=26).encode(text='t:N')
+    st.altair_chart((ring + mid + low).properties(height=310).configure_view(strokeWidth=0), use_container_width=True)
 
 
 def footnote():
@@ -75,7 +74,8 @@ elif page == '1. Quarterly review':
     c1, c2 = st.columns(2)
     c1.metric('Customers checking the fee each month', f'{s["checks_last"]:,.0f}', f'{s["checks_growth"]:+.0%} since April')
     c2.metric('Of those, went on to send', f'{s["send_rate"]:.0%}')
-    line_chart(mon[['Checked the fee', 'Sent in the app']].rename_axis('Month'), 'Customers')
+    donut([('Went on to send money', s['send_rate'], NAVY), ('Checked the fee but did not send', 1 - s['send_rate'], '#E8EBE6')],
+          f'{s["send_rate"]:.0%}', 'of fee checkers sent money')
 
     st.subheader('The service is reliable, which gives us a strong base to grow on')
     rel = s['reliability']
@@ -88,9 +88,9 @@ elif page == '1. Quarterly review':
     c1, c2 = st.columns(2)
     c1.metric(f'Sent on Wise directly (vs {money(s["app_vol"])} in the app)', money(s['wise_vol']))
     c2.metric('Growth in customers using Wise directly', f'{s["wise_users_growth"]:+.0%}')
-    m = mon[['Money sent in the app (£)', 'Money sent on Wise directly (£)']] / 1e6
-    m.columns = ['Sent in PartnerBank app', 'Sent on Wise directly']
-    line_chart(m.rename_axis('Month'), '£ millions', ',.0f')
+    donut([(f'Sent through the PartnerBank app ({money(s["app_vol"])})', s['app_vol'], NAVY),
+           (f'Sent on Wise directly ({money(s["wise_vol"])})', s['wise_vol'], ORANGE)],
+          f'{s["wise_share"]:.0%}', 'went around the app')
 
     st.subheader(f'{s["limited_share"]:.0%} of all money ({money(s["limited"])}) goes to Wise because of a limit in today’s app')
     fix = {'Over £50,000': 'Raise the limit', 'Currency not offered': 'Add currencies',
@@ -185,10 +185,9 @@ elif page == '3. Multi-currency accounts':
     c1, c2 = st.columns(2)
     c1.metric(f'Already use a Wise multi-currency account (of {s["wd_users"]:,.0f})', f'{s["mca_users"]:,.0f}')
     c2.metric('Use an account, card or receive money', f'{s["related_users"]:,.0f}')
-    wd = d[d.Channel.eq('Wise direct') & d['Product used'].isin(['Multi-currency Account', 'Cards', 'Receive'])]
-    by = wd.groupby(['Month', 'Product used'])['User ID'].nunique().unstack(fill_value=0) * a.SCALE
-    by = by.rename(columns={'Multi-currency Account': 'Multi-currency account'})
-    line_chart(by.rename_axis('Month'), 'Customers', colors=(NAVY, ORANGE, GREY))
+    donut([('Already use a multi-currency account', s['mca_users'], NAVY),
+           ('Use other Wise products', s['wd_users'] - s['mca_users'], '#E8EBE6')],
+          f'{s["mca_share"]:.0%}', f'of {s["wd_users"]:,.0f} on Wise')
     st.markdown("""
 - A survey shows what customers say they would do. Wise data shows what some of them already do.
 - Show how often they use it and which currencies they hold, to size what the bank is missing.
@@ -213,9 +212,9 @@ elif page == '4. Internal business case':
     c1, c2 = st.columns(2)
     c1.metric('New revenue over 3 years', f'£{model["New Wise revenue (£)"].sum() / 1e3:,.0f}k')
     c2.metric('Pays back', f'Month {pb}' if pb else 'Not within 3 years')
-    run = model.set_index('Month')[['Running total after costs (£)']] / 1e3
-    run.columns = ['Running total after costs']
-    line_chart(run.rename_axis('Months from decision'), '£ thousands')
+    new = max(k['revenue'] - k['displaced'], 0)
+    donut([('New revenue for Wise', new, NAVY), ('Revenue Wise would earn anyway', k['displaced'], '#E8EBE6')],
+          f'{new / k["revenue"]:.0%}' if k['revenue'] else '0%', 'of account revenue is new')
     st.markdown("""
 - New revenue = account revenue minus revenue Wise already earns from these customers.
 - Then subtract build (£300k), launch (£20k per partner), running and activation costs.
