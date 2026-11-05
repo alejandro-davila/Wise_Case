@@ -1,8 +1,4 @@
-"""All the numbers behind the PartnerBank review, in one place.
-
-Used by both the app (app.py) and the slide builder (deck/build_numbers.py),
-so the deck and the app always show the same figures.
-"""
+# numbers for the app and the deck
 from pathlib import Path
 import pandas as pd
 
@@ -68,7 +64,6 @@ def monthly(d):
 
 
 def summary(d):
-    """Headline numbers for the full year."""
     app = d[d.Channel.eq('Integration')]
     sent = app[app.Transacted]
     wise = add_reason(d[d.Channel.eq('Wise direct') & d.Transacted])
@@ -132,7 +127,7 @@ if __name__ == '__main__':
             print(k, '=', v if not isinstance(v, float) else round(v, 4))
 
 
-# ---------- Question 4: simple monthly model for a multi-currency account offering ----------
+# Q4 model
 Q4_DEFAULTS = dict(months=36, partners=3, eligible=100000, adoption=5, revenue=2.5, displaced=0.5,
                    service=0.75, build=300000, onboarding=20000, fixed=5000, launch=6, ramp=6,
                    attrition=1.0, activation=3.0)
@@ -140,7 +135,7 @@ Q4_DEFAULTS = dict(months=36, partners=3, eligible=100000, adoption=5, revenue=2
 
 def project(months, partners, eligible, adoption, revenue, displaced, service, build, onboarding,
             fixed, launch, ramp, attrition, activation):
-    """One launch cohort, even ramp, monthly attrition. Pre-tax planning model."""
+    # one launch, even ramp-up, monthly churn, before tax
     new_each = partners * eligible * adoption / 100 / ramp
     active = cumul = 0.0
     rows = []

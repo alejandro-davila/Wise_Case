@@ -4,10 +4,5 @@ headless = true
 [browser]
 gatherUsageStats = false
 
-# Colours from wise.com: forest green, near-black text, light green-grey panels
 [theme]
-base = "light"
 primaryColor = "#163300"
-textColor = "#0E0F0C"
-backgroundColor = "#FFFFFF"
-secondaryBackgroundColor = "#F2F4EF"
