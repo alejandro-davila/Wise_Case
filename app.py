@@ -9,6 +9,7 @@ import streamlit as st
 import analysis as a
 
 st.set_page_config(page_title='PartnerBank QBR', layout='centered')
+st.markdown('<style>.block-container{max-width:1100px}</style>', unsafe_allow_html=True)  # a bit wider, for the Sankey
 
 NAVY, ORANGE, GREY = '#163300', '#9FE870', '#868685'  # Wise forest green, bright green, grey
 
@@ -106,9 +107,8 @@ elif page == '1. Quarterly review':
     c1, c2 = st.columns(2)
     c1.metric(f'Sent on Wise directly (vs {money(s["app_vol"])} in the app)', money(s['wise_vol']))
     c2.metric('Growth in customers using Wise directly', f'{s["wise_users_growth"]:+.0%}')
-    donut([(f'Sent through the PartnerBank app ({money(s["app_vol"])})', s['app_vol'], NAVY),
-           (f'Sent on Wise directly ({money(s["wise_vol"])})', s['wise_vol'], ORANGE)],
-          f'{s["wise_share"]:.0%}', 'went around the app')
+    st.image(str(Path(__file__).parent / 'images' / 'sankey_app.png'), use_container_width=True)
+    st.caption('How to read it: follow the money left to right. The thicker the band, the more money. Circled in red are the four growth opportunities.')
 
     notes('The opportunity')
     st.subheader(f'Four growth opportunities: {s["limited_share"]:.0%} of all money ({money(s["limited"])}) leaves because of limits in today’s app')
