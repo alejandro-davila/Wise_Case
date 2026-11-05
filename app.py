@@ -7,7 +7,7 @@ import analysis as a
 
 st.set_page_config(page_title='PartnerBank QBR', layout='centered')
 
-NAVY, ORANGE, GREY = '#1B2A41', '#C8641E', '#9CA3AF'
+NAVY, ORANGE, GREY = '#163300', '#9FE870', '#868685'  # Wise forest green, bright green, grey
 
 
 @st.cache_data
@@ -23,7 +23,7 @@ def money(v):
 def line_chart(frame, y_title, fmt=',.0f', colors=(NAVY, ORANGE)):
     tidy = frame.reset_index().melt(frame.index.name or 'index', var_name='Series', value_name='Value')
     x = frame.index.name or 'index'
-    chart = alt.Chart(tidy).mark_line(strokeWidth=2.5).encode(
+    chart = alt.Chart(tidy).mark_line(strokeWidth=3).encode(
         x=alt.X(f'{x}:T' if x == 'Month' else f'{x}:Q', title=None if x == 'Month' else x,
                 axis=alt.Axis(format='%b %y') if x == 'Month' else alt.Axis()),
         y=alt.Y('Value:Q', title=y_title, axis=alt.Axis(format=fmt), scale=alt.Scale(zero=True)),
