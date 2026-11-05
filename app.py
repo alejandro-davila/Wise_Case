@@ -111,19 +111,19 @@ elif page == '1. Quarterly review':
           f'{s["wise_share"]:.0%}', 'went around the app')
 
     notes('The opportunity')
-    st.subheader(f'{s["limited_share"]:.0%} of all money ({money(s["limited"])}) goes to Wise because of a limit in today’s app')
+    st.subheader(f'Four growth opportunities: {s["limited_share"]:.0%} of all money ({money(s["limited"])}) leaves because of limits in today’s app')
     fix = {'Over £50,000': 'Raise the limit', 'Currency not offered': 'Add currencies',
            'Sent from euros or dollars': 'Send from EUR and USD', 'Business customer': 'Open to business',
            a.NO_LIMIT: 'Awareness, not features', 'Account, card or receiving': 'Different product (Q3)'}
     t = pd.DataFrame({'Reason': R.index, 'Money': R.map(money).values,
                       'Share of all money': (R / s['total_vol']).map('{:.0%}'.format).values,
-                      'What would fix it': [fix[r] for r in R.index]})
+                      'The opportunity': [fix[r] for r in R.index]})
     st.dataframe(t, hide_index=True, width='stretch')
-    st.caption('The first four rows are app limits. Each transfer is counted once.')
+    st.caption('The first four rows are growth opportunities we can unlock together. Each transfer is counted once.')
 
     ms = s['missing']
     top3 = ms[['PKR', 'BDT', 'JPY']].sum() / ms.sum()
-    notes('Why it leaves')
+    notes('Growth opportunities')
     st.subheader(f'Three currencies make up {top3:.0%} of the money going to currencies the app does not offer')
     names = {'PKR': 'Pakistani rupee', 'BDT': 'Bangladeshi taka', 'JPY': 'Japanese yen',
              'LKR': 'Sri Lankan rupee', 'KRW': 'South Korean won'}
