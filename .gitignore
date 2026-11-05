@@ -9,18 +9,15 @@ Wise_Case_Study_Tableau.xlsx
 Research/
 Web page/
 
-# Personal interview prep: never publish
 INTERVIEW_QA.md
 TALK_TRACK.md
 *.pdf
 *.heic
 
-# Deck build tooling
 deck/node_modules/
 deck/package-lock.json
 deck/
 
-# Old app files (kept locally, not used by the app)
 question2.py
 question3.py
 question4.py
